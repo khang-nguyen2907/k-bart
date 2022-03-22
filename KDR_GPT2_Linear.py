@@ -422,15 +422,31 @@ def main():
             pred_str = decoder_tokenizer.batch_decode(pred_ids, skip_special_tokens=True)
             label_ids_batch[label_ids_batch==-100] = decoder_tokenizer.eos_token_id
             label_str = decoder_tokenizer.batch_decode(label_ids_batch, skip_special_tokens=True)
-            rouge_output = rouge.compute(predictions = pred_str, references=label_str, rouge_types = ["rouge2"])["rouge2"].mid
-            rouge2_precision = round(rouge_output.precision, 4) 
-            rouge2_recall = round(rouge_output.recall, 4)
-            rouge2_fmeasure = round(rouge_output.fmeasure, 4)
+            rouge1_output = rouge.compute(predictions = pred_str, references=label_str, rouge_types = ["rouge1"])["rouge1"].mid
+            rouge2_output = rouge.compute(predictions = pred_str, references=label_str, rouge_types = ["rouge2"])["rouge2"].mid
+            rougeL_output = rouge.compute(predictions = pred_str, references=label_str, rouge_types = ["rougeL"])["rougeL"].mid
+
+
+            rouge1_precision = round(rouge1_output.precision, 4) 
+            rouge1_recall = round(rouge1_output.recall, 4)
+            rouge1_fmeasure = round(rouge1_output.fmeasure, 4)
+            
+            rouge2_precision = round(rouge2_output.precision, 4) 
+            rouge2_recall = round(rouge2_output.recall, 4)
+            rouge2_fmeasure = round(rouge2_output.fmeasure, 4)
+            
+            rougeL_precision = round(rougeL_output.precision, 4) 
+            rougeL_recall = round(rougeL_output.recall, 4)
+            rougeL_fmeasure = round(rougeL_output.fmeasure, 4)
             if is_test: 
-                print("report TEST: rouge_precision: {0} \trouge_recall: {1} \trouge_fmeasure: {2}".format(rouge2_precision, rouge2_recall, rouge2_fmeasure))
+                print("report TEST: rouge1_precision: {0} \trouge1_recall: {1} \trouge1_fmeasure: {2}".format(rouge1_precision, rouge1_recall, rouge1_fmeasure))
+                print("report TEST: rouge2_precision: {0} \trouge2_recall: {1} \trouge2_fmeasure: {2}".format(rouge2_precision, rouge2_recall, rouge2_fmeasure))
+                print("report TEST: rougeL_precision: {0} \trougeL_recall: {1} \trougeL_fmeasure: {2}".format(rougeL_precision, rougeL_recall, rougeL_fmeasure))
                 return rouge2_precision, rouge2_recall,rouge2_fmeasure
             else: 
-                print("report VAL: rouge_precision: {0} \trouge_recall: {1} \trouge_fmeasure: {2}".format(rouge2_precision, rouge2_recall, rouge2_fmeasure))
+                print("report VAL: rouge1_precision: {0} \trouge1_recall: {1} \trouge1_fmeasure: {2}".format(rouge1_precision, rouge1_recall, rouge1_fmeasure))
+                print("report VAL: rouge2_precision: {0} \trouge2_recall: {1} \trouge2_fmeasure: {2}".format(rouge2_precision, rouge2_recall, rouge2_fmeasure))
+                print("report VAL: rougeL_precision: {0} \trougeL_recall: {1} \trougeL_fmeasure: {2}".format(rougeL_precision, rougeL_recall, rougeL_fmeasure))
                 return rouge2_precision, rouge2_recall,rouge2_fmeasure
         
 
@@ -528,7 +544,8 @@ def main():
                     output_attentions=None,
                     output_hidden_states=None,
                     return_dict=None,
-                    position_ids = pos_ids_batch
+                    position_ids = pos_ids_batch, 
+                    token_type_ids = mask_ids_batch
                 )
                 loss = outputs[0]
             
