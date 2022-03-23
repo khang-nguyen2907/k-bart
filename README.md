@@ -1,6 +1,6 @@
 # kbart
 
-K-BART is a encoder-decoder model. Encoder is injected with a Knowledge graph. Encoder is using DistilRoBERTa, decoder is using GPT2
+K-BART is an encoder-decoder model.The Encoder is injected with a Knowledge graph.The Encoder is using DistilRoBERTa, the decoder is using GPT2
 ## Installation
 
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install requirements.
@@ -17,7 +17,7 @@ pip install --upgrade datasets
 ## Dataset 
 Dataset is already in ```datasets``` folder. Dataset consists of *train, val, test*
 
-Here, we use ```medical_train```, ```medical_val```, ```medical_test``` to train model. There are 23801 samples, 2975 samples and 2976 samples, repectively. 
+Here, we use ```medical_train```, ```medical_val```, ```medical_test``` to train model. There are 23801 samples, 2975 samples and 2976 samples, respectively. 
 About other datasets such as ```*_half```, ```*_mini``` smaller than the main dataset, they are extracted from the main datasets and used to test model whether it works or not after coding. 
 
 ## Train
