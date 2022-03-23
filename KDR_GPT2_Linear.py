@@ -247,7 +247,10 @@ def main():
     model.encoder.config.max_position_embeddings = args.seq_length_encoder
     model.encoder.config.dropout = args.dropout
     model.encoder.config.output_hidden_states = True 
+    model.encoder.config.type_vocab_size = 3
     model.decoder.config.add_cross_attention = True
+    model.encoder.embeddings.token_type_embeddings = nn.Embedding(model.encoder.config.type_vocab_size, model.encoder.config.hidden_size)
+
 
     #cache is currently not supported by EncoderDecoder framework 
     model.decoder.config.use_cache = False
