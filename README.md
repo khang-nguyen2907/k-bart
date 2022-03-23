@@ -38,7 +38,7 @@ python /content/k-distilroberta-gpt2/KDR_GPT2_BiLSTM.py \
         --test_path ./datasets/medical_test.tsv \
         --log_path ./logs \
         --kg_path ./brain/kgs/Medical.spo \
-        --last_logging /content/drive/MyDrive/CEREBRO/K-BART/K-BERT/K-distilBERT-GPT2/model/logs/log_epoch_5.json
+        --last_logging ./logs/log_epoch_5.json
 ```
 
 ### Model without BiLSTM 
@@ -57,7 +57,7 @@ python /content/k-distilroberta-gpt2/KDR_GPT2_Linear.py \
         --test_path ./datasets/medical_test.tsv \
         --log_path ./logs \
         --kg_path ./brain/kgs/Medical.spo \
-        --last_logging /content/drive/MyDrive/CEREBRO/K-BART/K-BERT/K-distilBERT-GPT2/model/logs/log_epoch_5.json
+        --last_logging ./logs/log_epoch_5.json
 ```
 
 Option of ```KDR_GPT2_*.py```
