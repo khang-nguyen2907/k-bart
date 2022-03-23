@@ -3,7 +3,7 @@
 K-BART is a encoder-decoder model. Encoder is injected with a Knowledge graph. Encoder is using DistilRoBERTa, decoder is using GPT2
 ## Installation
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
+Use the package manager [pip](https://pip.pypa.io/en/stable/) to install requirements.
 
 ```bash
 pip install transformers==4.11.2
