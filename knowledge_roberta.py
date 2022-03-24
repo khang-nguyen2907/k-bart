@@ -194,6 +194,13 @@ def make_vm_sent(sent, lktb,nlp = nlp, max_length = 256):
         
 
     #add pad
+    # when using roberta_tokenizer("Hello, I am Khang", padding = "max_length", truncation=  True, max_length = 20)
+    # >> input_ids : [0, 31414, 6, 1308, 766, 16, 2218, 1097, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    # >> attention: [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    # Although <pad_id> = 1 but semantic word is still set to 1 in attention_mask and 0 is otherwise. 
+    # Therefore, visible matrix need to be like that, semantic words is presented by 1, unrelated words or non-semantic is 0
+    # pos is position of each word in input sentence (sentence tree), therefore each element needs to be in order, not affected by pad_id
+    # token has PAD_TOKEN = <pad> (pad_token of roberta), it is correct. 
     if len(token_all) <= max_length:
         pad_num = max_length - total_token
         token_all += [PAD_TOKEN] * pad_num
