@@ -19,7 +19,7 @@ from optimizers import *
 from model_saver import *
 import traceback
 import datasets
-from transformers import GPT2Config, GPT2Tokenizer, GPT2Model, RobertaConfig, RobertaModel, RobertaTokenizer, EncoderDecoderModel
+from transformers import GPT2Config, GPT2Tokenizer, GPT2Model, RobertaConfig, RobertaModel, RobertaTokenizer, EncoderDecoderModel, EncoderDecoderConfig, AutoConfig
 from tqdm import tqdm
 import time
 from override import *
@@ -235,6 +235,7 @@ def main():
     print("Vocabulary Size: ", len(vocab))
     print(200 * '-')
 
+    #Model
     #MODEL
     ##Tokenizer
     #make sure GPT2 appends EOS in begin and end 
@@ -266,7 +267,38 @@ def main():
     config = EncoderDecoderConfig.from_encoder_decoder_configs(encoder_config, decoder_config)
 
     ## Model
-    model = EncoderDecoderModel(config=config)
+    #MODEL
+    ##Tokenizer
+    #make sure GPT2 appends EOS in begin and end 
+    def build_inputs_with_special_tokens(self, token_ids_0, token_ids_1=None):
+        outputs = [self.bos_token_id] + token_ids_0 + [self.eos_token_id]
+        return outputs 
+    GPT2Tokenizer.build_inputs_with_special_tokens = build_inputs_with_special_tokens
+
+    encoder_tokenizer = RobertaTokenizer.from_pretrained('distilroberta-base')
+    decoder_tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+    #CLS token <s> will work as BOS token <s>
+    encoder_tokenizer.bos_token = encoder_tokenizer.cls_token
+
+    #SEP token </s> will work as EOS token </s>
+    encoder_tokenizer.eos_token = encoder_tokenizer.sep_token
+
+    #set pad_token_id to unk_token_id -> be careful here as unk_token_id  == eos_token_id == bos_token_id
+    decoder_tokenizer.pad_token = decoder_tokenizer.unk_token
+    
+    ## Config
+    encoder_config = AutoConfig.from_pretrained('distilroberta-base')
+    decoder_config = AutoConfig.from_pretrained('gpt2')
+    encoder_config.max_position_embeddings = args.seq_length_encoder
+    encoder_config.hidden_dropout_prob = args.dropout
+    encoder_config.type_vocab_size = args.type_vocab_size
+    encoder_config.output_hidden_states = True 
+    decoder_config.add_cross_attention = True
+    decoder_config.use_cache = False #cache is currently not supported by EncoderDecoder framework 
+    config = EncoderDecoderConfig.from_encoder_decoder_configs(encoder_config, decoder_config)
+
+    ## Model
+    model = EncoderDecoderModel(config=config, encoder = None, decoder = None)
     for parameter in model.decoder.parameters(): 
         parameter.requires_grad = False
     for i, m in enumerate(model.decoder.transformer.h): 
@@ -290,6 +322,7 @@ def main():
     model.config.early_stopping = True
     model.config.length_penalty = 2.0 
     model.config.num_beams = 4
+    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if args.pretrained_model_path != "None": 
         print(200*"-")
@@ -400,11 +433,6 @@ def main():
         }
 
     def evaluate(args, is_test):
-        """
-        ROUGE-n recall=40% means that 40% of the n-grams in the reference summary are also present in the generated summary.
-        ROUGE-n precision=40% means that 40% of the n-grams in the generated summary are also present in the reference summary.
-        ROUGE-n F1-score=40% is more difficult to interpret, like any F1-score.
-        """
         
         if is_test:
             dataset = read_dataset(args.test_path, decoder_tokenizer,workers_num=args.workers_num)
@@ -447,16 +475,43 @@ def main():
             pred_str = decoder_tokenizer.batch_decode(pred_ids, skip_special_tokens=True)
             label_ids_batch[label_ids_batch==-100] = decoder_tokenizer.eos_token_id
             label_str = decoder_tokenizer.batch_decode(label_ids_batch, skip_special_tokens=True)
-            rouge_output = rouge.compute(predictions = pred_str, references=label_str, rouge_types = ["rouge2"])["rouge2"].mid
-            rouge2_precision = round(rouge_output.precision, 4) 
-            rouge2_recall = round(rouge_output.recall, 4)
-            rouge2_fmeasure = round(rouge_output.fmeasure, 4)
+            rouge1_output = rouge.compute(predictions = pred_str, references=label_str, rouge_types = ["rouge1"])["rouge1"].mid
+            rouge2_output = rouge.compute(predictions = pred_str, references=label_str, rouge_types = ["rouge2"])["rouge2"].mid
+            rougeL_output = rouge.compute(predictions = pred_str, references=label_str, rouge_types = ["rougeL"])["rougeL"].mid
+
+
+            rouge1_precision = round(rouge1_output.precision, 4) 
+            rouge1_recall = round(rouge1_output.recall, 4)
+            rouge1_fmeasure = round(rouge1_output.fmeasure, 4)
+            
+            rouge2_precision = round(rouge2_output.precision, 4) 
+            rouge2_recall = round(rouge2_output.recall, 4)
+            rouge2_fmeasure = round(rouge2_output.fmeasure, 4)
+            
+            rougeL_precision = round(rougeL_output.precision, 4) 
+            rougeL_recall = round(rougeL_output.recall, 4)
+            rougeL_fmeasure = round(rougeL_output.fmeasure, 4)
+            metrics_result = {
+                "rouge1_precision" : rouge1_precision, 
+                "rouge1_recall": rouge1_recall, 
+                "rouge1_fmeasure": rouge1_fmeasure, 
+                "rouge2_precision": rouge2_precision, 
+                "rouge2_recall": rouge2_recall, 
+                "rouge2_fmeasure": rouge2_fmeasure, 
+                "rougeL_precision": rougeL_precision, 
+                "rougeL_recall": rougeL_recall, 
+                "rougeL_fmeasure": rougeL_fmeasure
+            }
             if is_test: 
-                print("report TEST: rouge_precision: {0} \trouge_recall: {1} \trouge_fmeasure: {2}".format(rouge2_precision, rouge2_recall, rouge2_fmeasure))
-                return rouge2_precision, rouge2_recall,rouge2_fmeasure
+                print("report TEST: rouge1_precision: {0} \trouge1_recall: {1} \trouge1_fmeasure: {2}".format(rouge1_precision, rouge1_recall, rouge1_fmeasure))
+                print("report TEST: rouge2_precision: {0} \trouge2_recall: {1} \trouge2_fmeasure: {2}".format(rouge2_precision, rouge2_recall, rouge2_fmeasure))
+                print("report TEST: rougeL_precision: {0} \trougeL_recall: {1} \trougeL_fmeasure: {2}".format(rougeL_precision, rougeL_recall, rougeL_fmeasure))
+                return metrics_result
             else: 
-                print("report VAL: rouge_precision: {0} \trouge_recall: {1} \trouge_fmeasure: {2}".format(rouge2_precision, rouge2_recall, rouge2_fmeasure))
-                return rouge2_precision, rouge2_recall,rouge2_fmeasure
+                print("report VAL: rouge1_precision: {0} \trouge1_recall: {1} \trouge1_fmeasure: {2}".format(rouge1_precision, rouge1_recall, rouge1_fmeasure))
+                print("report VAL: rouge2_precision: {0} \trouge2_recall: {1} \trouge2_fmeasure: {2}".format(rouge2_precision, rouge2_recall, rouge2_fmeasure))
+                print("report VAL: rougeL_precision: {0} \trougeL_recall: {1} \trougeL_fmeasure: {2}".format(rougeL_precision, rougeL_recall, rougeL_fmeasure))
+                return metrics_result
         
 
     # Training phase.
@@ -553,7 +608,8 @@ def main():
                     output_attentions=None,
                     output_hidden_states=None,
                     return_dict=None,
-                    position_ids = pos_ids_batch
+                    position_ids = pos_ids_batch, 
+                    token_type_ids = mask_ids_batch
                 )
                 loss = outputs[0]
             
@@ -592,25 +648,17 @@ def main():
 
         print("\nStart evaluation on dev dataset")
         result = evaluate(args, False)
-        info_val = {
-            "precision": result[0],
-            "recall": result[1],
-            "f1": result[2]
-        }
+        
 
         print("\nStart evaluation on test dataset.")
         rt = evaluate(args, True)
-        info_test = {
-            "precision": rt[0],
-            "recall": rt[1],
-            "f1": rt[2]
-        }
+        
         t2 = time.time()
         info['epoch'] = int(epoch)
         info['total_loss'] = float(total_losses[-1])
         info['loss'] = losses
-        info['val'] = info_val
-        info['test'] = info_test
+        info['val'] = result
+        info['test'] = rt
         info['time'] = t2-t1
         path_log = os.path.join(args.log_path, "log_epoch_"+str(epoch)+".json")
         with open(path_log, mode = "w") as outfile: 
